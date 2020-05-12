@@ -1,0 +1,22 @@
+Package: omix
+Type: Package
+Title: Randomize Samples for -omics Profiling
+Version: 0.1.0
+Author: Lucy Sinke
+Maintainer: Lucy Sinke <l.j.sinke@lumc.nl>
+Description: Optimizes distribution of randomization variables to 
+    minimize correlations between them and technical covariates.
+    Also allows the production of PDF sample sheets for easy
+    manual pipetting of samples in the lab.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    dplyr,
+    ggplot2,
+    gridExtra,
+    magrittr,
+    readr,
+    tidyselect
+Depends: R (>= 4.0.0)
+RoxygenNote: 7.1.0
