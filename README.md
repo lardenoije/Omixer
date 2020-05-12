@@ -1,4 +1,4 @@
-# omix # 
+# omix #
 ### Multivariate randomization and reproducible generation of sample layouts to optimally combat batch effects in -omics data ###
 ***
 ![alt text](http://www.molepi.nl/images/logo.png)
@@ -19,7 +19,7 @@ These lists are then combined with plate layouts, which can be selected from com
 
 After calculating correlations between defined technical covariates and selected randomization factors, a layout is chosen that using the following criteria:
 * No test provided sufficient evidence to suggest correlation between the variables (all p-values over 0.05)
-* From the remaining layouts, return one where the absolute sum of correlations is minimized 
+* From the remaining layouts, return one where the absolute sum of correlations is minimized
 
 The resulting sample layout can then be printed as a list for automated setups, or processed by `omix_sheet` which returns easy-to-read visual plate layouts for the wet lab.
 
@@ -29,5 +29,5 @@ The **omix** package can be installed using [**devtools**](https://github.com/ha
 
 ```{r devtools, eval=FALSE}
 library(devtools)
-install_github("ljsinke/omix")
+install_github("molepi/omix")
 ```    
