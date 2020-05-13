@@ -138,7 +138,7 @@ omix_rand <- function(df,
 
   # If randomization variables are not specified, then use all columns except ID and block
   if(!exists("rand_vars")){
-    rand_vars = colnames(df_rand_list[[1]])[!colnames(df_rand_list[[1]]) %in% c("sample_num", "block_var")]
+    rand_vars = colnames(df_rand_list[[1]])[!colnames(df_rand_list[[1]]) %in% c("sample_id", "block_var")]
   }
 
   # Print information
