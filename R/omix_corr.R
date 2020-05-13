@@ -16,11 +16,6 @@
 #'
 #' @return List of correlation estimate and p-value
 #'
-#' @examples
-#' age <- rnorm(n = 20, mean = 70, sd = 3)
-#' plate <- rep(1:4, each = 5)
-#' omix_corr(age, plate)
-#'
 #' @importFrom stats chisq.test
 #' @importFrom stats cor.test
 #' @export
@@ -46,8 +41,8 @@ omix_corr <- function(x, y) {
     corr_p <- cor.test(x, y)$p.value
   }
 
-  # Return as a list of estimate and p-value
-  corr_list <- list("corr_val" = corr_val,
-                    "corr_p" = corr_p)
-  return(corr_list)
+  # Return as a data frame of estimate and p-value
+  corr_df <- data.frame("corr_val" = corr_val,
+                        "corr_p" = corr_p)
+  return(corr_df)
 }

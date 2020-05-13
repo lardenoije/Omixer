@@ -27,9 +27,3 @@ are stored.
 Please note: variables will be converted to numeric class
 within this function.
 }
-\examples{
-age <- rnorm(n = 20, mean = 70, sd = 3)
-plate <- rep(1:4, each = 5)
-omix_corr(age, plate)
-
-}

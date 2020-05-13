@@ -17,8 +17,8 @@
 #' significance (p<0.05) for that layout.
 #'
 #' @param df Sample list
-#' @param sample_num Name of sample ID variable
-#' @param block_var (Optional) Paired sample identifier
+#' @param sample_id Name of sample ID variable
+#' @param block (Optional) Paired sample identifier
 #' @param iter_num (Optional) Number of layouts to generate (default: 10,000)
 #' @param plate_layout Pre-specified or custom plate layout
 #' @param rand_vars (Optional) Randomization variables (default: all except sample ID and blocking variable)
@@ -30,13 +30,15 @@
 #'
 #' @importFrom dplyr select group_by slice ungroup bind_rows filter full_join arrange
 #' @importFrom readr write_delim write_csv write_csv2
-#' @importFrom tidyselect everything
+#' @importFrom tidyselect everything all_of
+#' @importFrom ggplot2 aes geom_point scale_fill_distiller scale_size_continuous
+#' @importFrom grid unit
 #' @import magrittr
 #' @export
 
 omix_rand <- function(df,
-                      sample_num = sample_num,
-                      block_var = block_var,
+                      sample_id = sample_id,
+                      block = block,
                       iter_num = 10000,
                       plate_layout = "Illumina96",
                       rand_vars,
@@ -52,6 +54,10 @@ omix_rand <- function(df,
   plate <- NULL
   well <- NULL
   n <- NULL
+  abs_sum <- NULL
+  rand_var <- NULL
+  tech_var <- NULL
+  corr_val <- NULL
 
   # Print information
   print("Initializing randomization package.")
@@ -65,48 +71,47 @@ omix_rand <- function(df,
       columns = rep(rep(1:12, each=8), 7))
   }
 
-  # Relabel columns based on input
-  data_frame <- df %>%
-    select(sample_num = sample_num,
-           block_var = block_var,
-           everything())
-
-  # Set up permutation variable (block or ID)
-  if("block_var" %in% colnames(data_frame)) {
+  # Define sample ID, blocks, and permutation variables
+  # Check that sample ID exists in the provided data frame
+  if(block %in% colnames(df)) {
+    df <- df %>%
+      select(sample_id = all_of(sample_id),
+             block = all_of(block),
+             perm_var = all_of(block),
+             everything())
     print("Order of paired samples will be randomized.")
-    data_frame$perm_var <- data_frame$block_var
+  } else if(sample_id %in% colnames(df)) {
+    df <- df %>%
+      select(sample_id = all_of(sample_id),
+             perm_var = all_of(sample_id),
+             everything())
   } else {
-    data_frame$perm_var <- data_frame$sample_num
+    stop("Sample ID not found in provided sample list. Please include a Sample ID.")
   }
 
   # Create the specified number of permutations of block or ID
   perm_set <- lapply(1:iter_num, function(x) {
     set.seed(x)
-    sample(unique(data_frame$perm_var))
+    sample(unique(df$perm_var))
   })
 
-  # Initialize variables
-  df_rand_list <- list()
-  count <- 1
-
   # Print information
-  print("Randomization in progress. This may take a while.")
+  print("Randomization in progress. Please be patient.")
 
-  # Shuffle blocks and then randomize the list a specified number of times
-  for(i in 1:iter_num) {
-    df_rand <- data.frame()
-    set.seed(i)
-    df_shuffle <- data_frame %>%
+  # Create list of randomized sample layouts using perm_set
+  df_rand_list <- lapply(1:iter_num, function(x) {
+    set.seed(x)
+    df_shuffle <- df %>%
       group_by(perm_var) %>%
       slice(sample(1:n())) %>%
       ungroup()
-    for(j in 1:length(perm_set[[i]])) {
-      df_rand <- bind_rows(df_rand, df_shuffle %>%
-                             filter(perm_var==perm_set[[i]][j]))
+    df_rand <- data.frame()
+    for(i in 1:length(perm_set[[x]])) {
+      df_rand <- bind_rows(df_rand, df_shuffle %>% filter(perm_var == perm_set[[x]][i]))
     }
-    df_rand_list[[count]] <- df_rand
-    count <- count + 1
-  }
+    df_rand$seed <- x
+    return(df_rand)
+  })
 
   # Print information
   print("Randomization complete.")
@@ -122,89 +127,86 @@ omix_rand <- function(df,
     stop("Number of unmasked wells must equal number of samples")
   }
 
-  # Initialize variables
-  sample_layout <- list()
-  count <- 1
-
   # Print information
   print("Combining sample list with plate layout.")
 
   # Combine randomized sample lists with plate layout
-  for(i in 1:length(df_rand_list)){
-    sample_layout[[count]] <- cbind(
-      df_rand_list[[i]],
-      plate_layout_masked)
-    count <- count + 1
-  }
+  sample_layout_list <- lapply(1:length(df_rand_list), function(x) {
+    sample_layout <- cbind(df_rand_list[[x]], plate_layout_masked)
+    return(sample_layout)
+  })
 
   # If randomization variables are not specified, then use all columns except ID and block
   if(!exists("rand_vars")){
-    rand_vars = colnames(df_rand_list[[1]])
+    rand_vars = colnames(df_rand_list[[1]])[!colnames(df_rand_list[[1]]) %in% c("sample_num", "block_var")]
   }
-
-  rand_vars <- rand_vars[!rand_vars %in%
-                           c("sample_num", "block_var")]
-
-  # Print information
-  print("The following columns will have their correlations with technical covariates minimized: ")
-  print(rand_vars)
-
-  # Initialize variables
-  corr_matrix <- matrix(nrow = length(sample_layout),
-                        ncol = length(rand_vars) *
-                          length(tech_vars))
-  corr_p <- corr_matrix
 
   # Print information
   print("Calculating correlations.")
 
-  # For each layout, calculate correlations between randomization variables and technical covariates
-  for(i in 1:length(sample_layout)) {
-    df <- sample_layout[[i]]
-    count <- 1
-    for(j in rand_vars) {
-      for(k in tech_vars) {
-        corr_matrix[i,count] <- omix_corr(df[,j], df[,k])$corr_val
-        corr_p[i,count] <- omix_corr(df[,j], df[,k])$corr_p
-        count <- count + 1
+  # Save correlation estimates and p-values
+  corr_df_list <- lapply(1:length(sample_layout_list), function(x){
+    sample_layout <- sample_layout_list[[x]]
+    corr_df <- data.frame()
+    for(i in rand_vars){
+      for(j in tech_vars){
+        corr <- omix_corr(sample_layout[, i], sample_layout[, j])
+        corr_df <- bind_rows(corr_df, data.frame(rand_var = i, tech_var = j, corr_val = corr$corr_val, corr_p = corr$corr_p))
       }
     }
-  }
+    return(corr_df)
+  })
 
-  # Calculate the absolute sum of correlations and set up row ID
-  corr_matrix <- data.frame(corr_matrix)
-  corr_matrix$corr_sum <- rowSums(abs(corr_matrix))
-  corr_matrix$n <- 1:nrow(corr_matrix)
+  # Create data frame with seed, absolute sum of correlations, and whether p-value is under 0.05
+  corr_sum <- data.frame()
 
-  # Filter out rows where a correlation test returned a significant (< 0.05) p-value
-  for(i in 1:length(sample_layout)){
-    corr_matrix$p_test[i] <- any(corr_p[i,] < 0.05)
+  for(i in 1:length(corr_df_list)){
+    corr_df <- corr_df_list[[i]]
+    corr_sum <- bind_rows(corr_sum, data.frame(seed = i, abs_sum = sum(abs(corr_df$corr_val)), p_test = any(corr_df$corr_p < 0.05)))
   }
 
   # Find the layout with the minimum sum of correlations and no significant correlation test
-  corr_select <- corr_matrix %>%
-    filter(p_test == FALSE) %>%
-    filter(corr_sum == min(corr_sum))
+  chosen_seed <- (corr_sum %>% filter(p_test == FALSE) %>% filter(abs_sum == min(abs_sum)))$seed
 
   # Check number of optimized layouts
-  if(nrow(corr_select)==0){
-    print("No randomized layout failed to provide insufficient evidence of correlation between technical covariates and randomization variables.")
+  if(length(chosen_seed)==0){
+    print("All randomized layouts provided sufficient evidence for correlation between technical covariates and randomization variables.")
     print("Please increase iteration number or reduce number of randomization and/or technical covariates.")
-  } else if(nrow(corr_select > 1)) {
-    corr_select <- corr_select[1, ]
+  } else if(length(chosen_seed) > 1) {
+    chosen_seed <- chosen_seed[1]
     print("Several layouts were equally optmized, so only the first will be selected.")
   } else {
   }
 
+  # Save correlations for chosen layout
+  corr_select <- corr_df_list[[chosen_seed]]
+
   # Select the layout with minimum correlations and no significant correlations
-  final_layout <- sample_layout[[corr_select$n]]
+  final_layout <- sample_layout_list[[chosen_seed]]
 
   # Rejoin layout with masked wells
   final_layout <- full_join(final_layout, plate_layout, by = c("well", "plate", "row", "columns", "mask"))
   final_layout <- final_layout %>% arrange(plate, well)
 
   # Print information
-  print(paste("Maximum correlation:", round(max(abs(corr_select[1:(length(rand_vars)*length(tech_vars))])), 4)))
+  print(paste("Selected layout created using a seed of:", final_layout$seed[1]))
+  print("To recreate this layout, please use the omix_specific() function with this seed.")
+
+  # Visualize correlations
+  print(ggplot(corr_select, aes(x = rand_var, y = tech_var)) +
+    geom_tile(colour = "white", size = 3, fill = "grey90") +
+    geom_point(aes(size = corr_val, fill = corr_val), stroke = 2, color = "grey20", shape = 21, show.legend = FALSE) +
+    geom_text(aes(label = round(corr_val,3)), colour = "grey20", fontface = "bold") +
+    scale_fill_distiller(palette = "Spectral") +
+    scale_size_continuous(range = c(15,25)) +
+    scale_x_discrete(position = "top", name = "Randomization variables", label=function(x) abbreviate(x, minlength=8), expand = c(0,0)) +
+    scale_y_discrete(name = "Technical covariates", label=function(x) abbreviate(x, minlength=8), expand = c(0,0)) +
+    ggtitle("Correlations present in the chosen layout") +
+    theme(plot.title = element_text(hjust = 0.5, size = 16),
+          panel.background = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(angle = 90, size = 12),
+          plot.margin = unit(c(1,1,1,1), "cm")))
 
   return(final_layout)
 

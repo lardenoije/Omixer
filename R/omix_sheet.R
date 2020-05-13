@@ -18,7 +18,7 @@
 omix_sheet <- function(layout = final_layout, group) {
 
   # Initialize variables
-  sample_num <- NULL
+  sample_id <- NULL
   plate <- NULL
   aes <- NULL
   columns <- NULL
@@ -28,7 +28,7 @@ omix_sheet <- function(layout = final_layout, group) {
   # Set labels
   final_layout <- final_layout %>%
     mutate(
-      top = sample_num,
+      top = sample_id,
       bottom = group)
 
   # Initialize variables

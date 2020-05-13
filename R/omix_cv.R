@@ -8,11 +8,6 @@
 #'
 #' @return Cramer's V estimate of correlation
 #'
-#' @examples
-#' sex <- sample(1:2, 20, replace = TRUE)
-#' plate <- rep(1:4, each = 5)
-#' omix_corr(sex, plate)
-#'
 #' @importFrom stats chisq.test
 #' @export
 

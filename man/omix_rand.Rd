@@ -6,8 +6,8 @@
 \usage{
 omix_rand(
   df,
-  sample_num = sample_num,
-  block_var = block_var,
+  sample_id = sample_id,
+  block = block,
   iter_num = 10000,
   plate_layout = "Illumina96",
   rand_vars,
@@ -19,9 +19,9 @@ omix_rand(
 \arguments{
 \item{df}{Sample list}
 
-\item{sample_num}{Name of sample ID variable}
+\item{sample_id}{Name of sample ID variable}
 
-\item{block_var}{(Optional) Paired sample identifier}
+\item{block}{(Optional) Paired sample identifier}
 
 \item{iter_num}{(Optional) Number of layouts to generate (default: 10,000)}
 

@@ -18,9 +18,3 @@ Cramer's V estimate of correlation
 This function calculates the Cramer's V estimate of correlation
 between two categorical variables with a value between 0 and 1.
 }
-\examples{
-sex <- sample(1:2, 20, replace = TRUE)
-plate <- rep(1:4, each = 5)
-omix_corr(sex, plate)
-
-}
