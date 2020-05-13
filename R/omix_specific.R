@@ -48,7 +48,6 @@ omix_specific <- function(df,
   rand_var <- NULL
   tech_var <- NULL
   corr_val <- NULL
-  df_rand_list <- NULL
 
   # Print information
   print("Initializing randomization package.")
@@ -109,7 +108,7 @@ omix_specific <- function(df,
   plate_layout_masked <- plate_layout %>% filter(mask == 0)
 
   # Check if number of unmasked wells is equal to number of samples
-  if(nrow(plate_layout_masked) != nrow(df_rand_list[[1]])) {
+  if(nrow(plate_layout_masked) != nrow(df_rand)) {
     stop("Number of unmasked wells must equal number of samples")
   }
 
@@ -138,7 +137,7 @@ omix_specific <- function(df,
     }
 
   # Create data frame with seed, absolute sum of correlations, and whether p-value is under 0.05
-  corr_select <- data.frame(seed = seed, abs_sum = sum(abs(corr_df$corr_val)), p_test = any(corr_df$corr_p < 0.05))
+  corr_sum <- data.frame(seed = seed, abs_sum = sum(abs(corr_df$corr_val)), p_test = any(corr_df$corr_p < 0.05))
 
   # Select the layout with minimum correlations and no significant correlations
   final_layout <- sample_layout
@@ -148,10 +147,10 @@ omix_specific <- function(df,
   final_layout <- final_layout %>% arrange(plate, well)
 
   # Print information
-  print(paste("Selected layout created using a seed of:", final_layout$seed[1]))
+  print(paste("Selected layout created using a seed of:", seed))
 
   # Visualize correlations
-  print(ggplot(corr_select, aes(x = rand_var, y = tech_var)) +
+  print(ggplot(corr_df, aes(x = rand_var, y = tech_var)) +
           geom_tile(colour = "white", size = 3, fill = "grey90") +
           geom_point(aes(size = corr_val, fill = corr_val), stroke = 2, color = "grey20", shape = 21, show.legend = FALSE) +
           geom_text(aes(label = round(corr_val,3)), colour = "grey20", fontface = "bold") +
