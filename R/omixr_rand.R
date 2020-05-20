@@ -1,63 +1,40 @@
-#' Sample Randomization
+#' Multivariate Randomization
 #'
-#' This function takes a sample list, with defined sample ID,
-#' and randomizes it a specified number of times.
-#'
-#' It has an option to specify paired samples (blocks), which
-#' will be kept adjacent to one another but with their order
-#' shuffled.
-#'
-#' Randomized sample layouts are then combined with either a
-#' pre-specified or custom plate layout, with the option to
-#' mask specified wells.
-#'
-#' The function then chooses the layout that minimizes
-#' correlation between randomization variables and technical
-#' covariates, so long as no test of correlation reached
-#' significance (p<0.05) for that layout.
+#' As the main function of the omixr package, this function
+#' outputs a randomized sample list that minimizes correlations
+#' between biological factors and technical covariates.
 #'
 #' @param df Sample list
-#' @param sample_id Name of sample ID variable
-#' @param block (Optional) Paired sample identifier
-#' @param iter_num (Optional) Number of layouts to generate (default: 10,000)
+#' @param sample_id String specifying sample ID variable
+#' @param block Paired sample identifier
+#' @param iter_num Number of layouts to generate
 #' @param plate_layout Pre-specified or custom plate layout
-#' @param rand_vars (Optional) Randomization variables (default: all except sample ID and blocking variable)
+#' @param rand_vars Randomization variables
 #' @param tech_vars Technical covariates
 #' @param mask Wells to be left empty
-#' @param save Method of saving output
 #'
-#' @return Data frame containing the chosen layout
+#' @return Selected randomized sample list as a data frame
 #'
-#' @importFrom dplyr select group_by slice ungroup bind_rows filter full_join arrange
+#' @importFrom dplyr select group_by slice ungroup bind_rows filter full_join arrange n
 #' @importFrom readr write_delim write_csv write_csv2
 #' @importFrom tidyselect everything all_of
-#' @importFrom ggplot2 aes geom_point scale_fill_distiller scale_size_continuous
+#' @importFrom ggplot2 aes geom_point scale_fill_distiller scale_size_continuous coord_equal
 #' @importFrom grid unit
 #' @import magrittr
 #' @export
 
-omix_rand <- function(df,
-                      sample_id = sample_id,
-                      block = block,
-                      iter_num = 10000,
-                      plate_layout = "Illumina96",
-                      rand_vars,
-                      tech_vars,
-                      mask = 0,
-                      save = "rdata"
-                      ) {
+omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 10000, plate_layout = "Illumina96", rand_vars, tech_vars, mask = 0) {
 
   # Initialize variables
   perm_var <- NULL
   p_test <- NULL
-  corr_sum <- NULL
+  abs_sum <- NULL
   plate <- NULL
   well <- NULL
-  n <- NULL
-  abs_sum <- NULL
   rand_var <- NULL
   tech_var <- NULL
   corr_val <- NULL
+  corr_p <- NULL
 
   # Print information
   print("Initializing randomization package.")
@@ -150,7 +127,7 @@ omix_rand <- function(df,
     corr_df <- data.frame()
     for(i in rand_vars){
       for(j in tech_vars){
-        corr <- omix_corr(sample_layout[, i], sample_layout[, j])
+        corr <- omixr_corr(sample_layout[, i], sample_layout[, j])
         corr_df <- bind_rows(corr_df, data.frame(rand_var = i, tech_var = j, corr_val = corr$corr_val, corr_p = corr$corr_p))
       }
     }
@@ -182,44 +159,41 @@ omix_rand <- function(df,
   corr_select <- corr_df_list[[chosen_seed]]
 
   # Select the layout with minimum correlations and no significant correlations
-  final_layout <- sample_layout_list[[chosen_seed]]
+  omixr_layout <- sample_layout_list[[chosen_seed]]
 
   # Rejoin layout with masked wells
-  final_layout <- full_join(final_layout, plate_layout, by = c("well", "plate", "row", "columns", "mask"))
-  final_layout <- final_layout %>% arrange(plate, well)
+  omixr_layout <- full_join(omixr_layout, plate_layout, by = c("well", "plate", "row", "columns", "mask"))
+  omixr_layout <- omixr_layout %>% arrange(plate, well)
 
   # Print information
-  print(paste("Selected layout created using a seed of:", final_layout$seed[1]))
-  print("To recreate this layout, please use the omix_specific() function with this seed.")
+  print(paste("Selected layout created using a seed of:", omixr_layout$seed[1]))
+  print("To recreate this layout, please use the omixr_specific() function with this seed.")
 
   # Visualize correlations
   print(ggplot(corr_select, aes(x = rand_var, y = tech_var)) +
-    geom_tile(colour = "white", size = 3, fill = "grey90") +
-    geom_point(aes(size = corr_val, fill = corr_val), stroke = 2, color = "grey20", shape = 21, show.legend = FALSE) +
-    geom_text(aes(label = round(corr_val,3)), colour = "grey20", fontface = "bold") +
-    scale_fill_distiller(palette = "Spectral") +
-    scale_size_continuous(range = c(15,25)) +
-    scale_x_discrete(position = "top", name = "Randomization variables", label=function(x) abbreviate(x, minlength=8), expand = c(0,0)) +
-    scale_y_discrete(name = "Technical covariates", label=function(x) abbreviate(x, minlength=8), expand = c(0,0)) +
+    geom_tile(aes(fill = corr_val),
+              size = 3, colour = "white", show.legend = FALSE) +
+    geom_text(aes(label = round(corr_val,3)),
+              colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30"), fontface = "bold", nudge_y = 0.2, size = 5) +
+    geom_text(aes(label = paste("p =",round(corr_p, 3))),
+              nudge_y = -0.2, colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30")) +
+    scale_fill_distiller(palette = "YlGnBu") +
+    scale_x_discrete(position = "top",
+                     name = "Randomization variables \n",
+                     label=function(x) abbreviate(x, minlength=6),
+                     expand = c(0,0)) +
+    scale_y_discrete(name = "Technical \n covariates",
+                     label=function(x) abbreviate(x, minlength=6),
+                     expand = c(0,0)) +
     ggtitle("Correlations present in the chosen layout") +
-    theme(plot.title = element_text(hjust = 0.5, size = 16),
-          panel.background = element_blank(),
+    coord_equal() +
+    theme(plot.title = element_text(hjust = 0.5, size = 18),
+          axis.title = element_text(face = "bold", size = 14),
+          axis.ticks = element_blank(),
           axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(angle = 90, size = 12),
-          plot.margin = unit(c(1,1,1,1), "cm")))
+          axis.text.y = element_text(angle = 90, size = 12, vjust=1)))
 
-  return(final_layout)
-
-  # Save layout and selected
-  if(save == "csv2") {
-    write_csv2(final_layout, "./final_layout.csv")
-  } else if(save == "csv") {
-    write_csv(final_layout, "./final_layout.csv")
-  } else if(save == "tab") {
-    write_delim(final_layout, "./final_layout.txt", delim="\t")
-  } else {
-  save(final_layout, file = "./final_layout.Rdata")
-  }
+  return(omixr_layout)
 }
 
 

@@ -1,4 +1,4 @@
-Package: omix
+Package: omixr
 Type: Package
 Title: Randomize Samples for -omics Profiling
 Version: 0.1.0

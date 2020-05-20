@@ -18,9 +18,11 @@
 #'
 #' @importFrom stats chisq.test
 #' @importFrom stats cor.test
-#' @export
+#'
+#' @keywords internal
+#' @noRd
 
-omix_corr <- function(x, y) {
+omixr_corr <- function(x, y) {
 
   # Convert variables to numeric
   if(class(x) %in% c("factor", "character", "Date")){
@@ -33,7 +35,7 @@ omix_corr <- function(x, y) {
   # Save correlation estimates and p values
   if(length(unique(x)) < 5 & length(unique(y)) < 5){
     # For two categorical variables, save Cramer's V correlation estimate and chi2 p-value
-    corr_val <- omix_cv(x, y)
+    corr_val <- omixr_cv(x, y)
     corr_p <- chisq.test(x, y)$p.value
   } else {
     # Otherwise, use Pearson's correlation coefficient and p-value

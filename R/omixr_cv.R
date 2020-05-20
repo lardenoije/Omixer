@@ -9,9 +9,11 @@
 #' @return Cramer's V estimate of correlation
 #'
 #' @importFrom stats chisq.test
-#' @export
+#'
+#' @keywords internal
+#' @noRd
 
-omix_cv <- function(x, y) {
+omixr_cv <- function(x, y) {
 
   # Calculate Cramer's V
   cv <- sqrt(chisq.test(x, y, correct=FALSE)$statistics /
