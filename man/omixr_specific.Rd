@@ -10,6 +10,7 @@ omixr_specific(
   sample_id = sample_id,
   block = block,
   plate_layout = "Illumina96",
+  plate_number = 1,
   rand_vars,
   tech_vars,
   mask = 0
@@ -25,6 +26,8 @@ omixr_specific(
 \item{block}{Paired sample identifier}
 
 \item{plate_layout}{Pre-specified or custom plate layout}
+
+\item{plate_number}{Number of plates}
 
 \item{rand_vars}{Randomization variables (default: all except sample ID and block)}
 

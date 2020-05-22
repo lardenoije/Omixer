@@ -10,7 +10,7 @@
 #' @return PDF of sample layout in working directory
 #'
 #' @importFrom dplyr select filter
-#' @importFrom ggplot2 ggplot geom_tile geom_text scale_fill_brewer scale_x_discrete ggsave scale_y_discrete ggtitle theme element_blank element_text element_rect
+#' @importFrom ggplot2 ggplot geom_tile geom_text scale_fill_brewer scale_x_discrete ggsave scale_y_discrete ggtitle theme element_blank element_text element_rect ggplotGrob
 #' @importFrom gridExtra marrangeGrob
 #' @importFrom tidyselect everything all_of
 #' @import magrittr
@@ -41,8 +41,8 @@ omixr_sheet <- function(omixr_layout = omixr_layout, group = NULL) {
         ggplot(aes(x=columns, y=row)) +
         geom_tile(aes(x = columns, y = row, fill = bottom), colour = "grey20", size = 1.5, show.legend = FALSE) +
         coord_equal() +
-        geom_text(aes(label=ifelse(is.na(bottom),"",bottom)), colour = "grey30", size = 3.5, nudge_y = 0.2) +
-        geom_text(aes(label=ifelse(is.na(top),"",top)), colour = "grey30", fontface = "bold", size = 4, nudge_y = -0.1) +
+        geom_text(aes(label=ifelse(is.na(bottom),"",as.character(bottom))), colour = "grey30", size = 3.5, nudge_y = 0.2) +
+        geom_text(aes(label=ifelse(is.na(top),"",as.character(top))), colour = "grey30", fontface = "bold", size = 4, nudge_y = -0.1) +
         scale_fill_brewer(palette = "Set3") +
         scale_x_discrete(name = "", limits = c(min(omixr_layout$columns):max(omixr_layout$columns)), position = "top", expand = c(0,0)) +
         scale_y_discrete(name = "", limits = toupper(letters[max(as.numeric(omixr_layout$row)):min(as.numeric(omixr_layout$row))]), expand = c(0,0)) +

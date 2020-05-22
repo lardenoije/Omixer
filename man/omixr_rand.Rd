@@ -10,6 +10,7 @@ omixr_rand(
   block = block,
   iter_num = 10000,
   plate_layout = "Illumina96",
+  plate_number = 1,
   rand_vars,
   tech_vars,
   mask = 0
@@ -25,6 +26,8 @@ omixr_rand(
 \item{iter_num}{Number of layouts to generate}
 
 \item{plate_layout}{Pre-specified or custom plate layout}
+
+\item{plate_number}{Number of plates}
 
 \item{rand_vars}{Randomization variables}
 

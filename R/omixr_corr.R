@@ -18,6 +18,7 @@
 #'
 #' @importFrom stats chisq.test
 #' @importFrom stats cor.test
+#' @importFrom forcats as_factor
 #'
 #' @keywords internal
 #' @noRd
@@ -25,11 +26,18 @@
 omixr_corr <- function(x, y) {
 
   # Convert variables to numeric
-  if(class(x) %in% c("factor", "character", "Date")){
-    x <- as.numeric(factor(x))
+  if(class(x) %in% c("character")){
+    x <- as.numeric(as_factor(x))
   }
-  if(class(y) %in% c("factor", "character", "Date")){
-    y <- as.numeric(factor(y))
+  if(class(y) %in% c("character")){
+    y <- as.numeric(as_factor(y))
+  }
+
+  if(class(x) %in% c("Date", "factor")){
+    x <- as.numeric(x)
+  }
+  if(class(y) %in% c("Date", "factor")){
+    y <- as.numeric(y)
   }
 
   # Save correlation estimates and p values

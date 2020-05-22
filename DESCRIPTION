@@ -1,4 +1,4 @@
-Package: omixr
+Package: omixR
 Type: Package
 Title: Randomize Samples for -omics Profiling
 Version: 0.1.0
@@ -8,15 +8,24 @@ Description: Optimizes distribution of randomization variables to
     minimize correlations between them and technical covariates.
     Also allows the production of PDF sample sheets for easy
     manual pipetting of samples in the lab.
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
     dplyr,
     ggplot2,
+    forcats,
+    tibble,
+    stringr,
+    here,
     gridExtra,
     magrittr,
     readr,
-    tidyselect
+    tidyselect,
+    BiocStyle
 Depends: R (>= 4.0.0)
 RoxygenNote: 7.1.0
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

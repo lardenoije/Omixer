@@ -9,6 +9,7 @@
 #' @param block Paired sample identifier
 #' @param iter_num Number of layouts to generate
 #' @param plate_layout Pre-specified or custom plate layout
+#' @param plate_number Number of plates
 #' @param rand_vars Randomization variables
 #' @param tech_vars Technical covariates
 #' @param mask Wells to be left empty
@@ -23,7 +24,7 @@
 #' @import magrittr
 #' @export
 
-omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 10000, plate_layout = "Illumina96", rand_vars, tech_vars, mask = 0) {
+omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 10000, plate_layout = "Illumina96", plate_number = 1, rand_vars, tech_vars, mask = 0) {
 
   # Initialize variables
   perm_var <- NULL
@@ -42,10 +43,10 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
   # Set up predefined plate layout
   if(plate_layout == "Illumina96") {
     plate_layout <- data.frame(
-      well = rep(1:96, 7),
-      plate = rep(1:7, each=96),
-      row = factor(rep(1:8, 84), labels = toupper(letters[1:8])),
-      columns = rep(rep(1:12, each=8), 7))
+      well = rep(1:96, plate_number),
+      plate = rep(1:plate_number, each=96),
+      row = factor(rep(1:8, 12*plate_number), labels = toupper(letters[1:8])),
+      columns = rep(rep(1:12, each=8), plate_number))
   }
 
   # Define sample ID, blocks, and permutation variables
@@ -68,7 +69,7 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
 
   # Create the specified number of permutations of block or ID
   perm_set <- lapply(1:iter_num, function(x) {
-    set.seed(x)
+    set.seed(x*5)
     sample(unique(df$perm_var))
   })
 
@@ -77,7 +78,7 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
 
   # Create list of randomized sample layouts using perm_set
   df_rand_list <- lapply(1:iter_num, function(x) {
-    set.seed(x)
+    set.seed(x*5)
     df_shuffle <- df %>%
       group_by(perm_var) %>%
       slice(sample(1:n())) %>%
@@ -86,7 +87,7 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
     for(i in 1:length(perm_set[[x]])) {
       df_rand <- bind_rows(df_rand, df_shuffle %>% filter(perm_var == perm_set[[x]][i]))
     }
-    df_rand$seed <- x
+    df_rand$seed <- x*5
     return(df_rand)
   })
 
@@ -139,7 +140,7 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
 
   for(i in 1:length(corr_df_list)){
     corr_df <- corr_df_list[[i]]
-    corr_sum <- bind_rows(corr_sum, data.frame(seed = i, abs_sum = sum(abs(corr_df$corr_val)), p_test = any(corr_df$corr_p < 0.05)))
+    corr_sum <- bind_rows(corr_sum, data.frame(seed = i*5, abs_sum = sum(abs(corr_df$corr_val)), p_test = any(corr_df$corr_p < 0.05)))
   }
 
   # Find the layout with the minimum sum of correlations and no significant correlation test
@@ -147,8 +148,9 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
 
   # Check number of optimized layouts
   if(length(chosen_seed)==0){
-    print("All randomized layouts provided sufficient evidence for correlation between technical covariates and randomization variables.")
-    print("Please increase iteration number or reduce number of randomization and/or technical covariates.")
+    warning("All randomized layouts provided sufficient evidence for correlation between technical covariates and randomization variables.")
+    warning("Returning best possible layout, but consider rerunning with increased iteration number or reduced number of variables.")
+    nonopt_seed <- (corr_sum %>% filter(abs_sum == min(abs_sum)))$seed
   } else if(length(chosen_seed) > 1) {
     chosen_seed <- chosen_seed[1]
     print("Several layouts were equally optmized, so only the first will be selected.")
@@ -156,10 +158,13 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
   }
 
   # Save correlations for chosen layout
-  corr_select <- corr_df_list[[chosen_seed]]
-
-  # Select the layout with minimum correlations and no significant correlations
-  omixr_layout <- sample_layout_list[[chosen_seed]]
+  if(length(chosen_seed)>0){
+    corr_select <- corr_df_list[[chosen_seed/5]]
+    omixr_layout <- sample_layout_list[[chosen_seed/5]]
+  } else {
+    corr_select <- corr_df_list[[nonopt_seed/5]]
+    omixr_layout <- sample_layout_list[[nonopt_seed/5]]
+  }
 
   # Rejoin layout with masked wells
   omixr_layout <- full_join(omixr_layout, plate_layout, by = c("well", "plate", "row", "columns", "mask"))
@@ -174,9 +179,9 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
     geom_tile(aes(fill = corr_val),
               size = 3, colour = "white", show.legend = FALSE) +
     geom_text(aes(label = round(corr_val,3)),
-              colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30"), fontface = "bold", nudge_y = 0.2, size = 5) +
+              colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30"), fontface = "bold", nudge_y = 0.2, size = 8) +
     geom_text(aes(label = paste("p =",round(corr_p, 3))),
-              nudge_y = -0.2, colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30")) +
+              nudge_y = -0.2, size = 6, colour = ifelse(corr_select$corr_val < mean(corr_select$corr_val), "white", "grey30")) +
     scale_fill_distiller(palette = "YlGnBu") +
     scale_x_discrete(position = "top",
                      name = "Randomization variables \n",
@@ -187,11 +192,11 @@ omixr_rand <- function(df, sample_id = sample_id, block = block, iter_num = 1000
                      expand = c(0,0)) +
     ggtitle("Correlations present in the chosen layout") +
     coord_equal() +
-    theme(plot.title = element_text(hjust = 0.5, size = 18),
-          axis.title = element_text(face = "bold", size = 14),
+    theme(plot.title = element_text(hjust = 0.5, size = 24),
+          axis.title = element_text(face = "bold", size = 18),
           axis.ticks = element_blank(),
-          axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(angle = 90, size = 12, vjust=1)))
+          axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(angle = 90, size = 16, vjust=1)))
 
   return(omixr_layout)
 }

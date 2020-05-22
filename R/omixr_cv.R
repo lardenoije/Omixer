@@ -16,9 +16,14 @@
 omixr_cv <- function(x, y) {
 
   # Calculate Cramer's V
-  cv <- sqrt(chisq.test(x, y, correct=FALSE)$statistics /
+  cv_stat <- chisq.test(x, y, correct = FALSE)$statistics
+
+  if(is.null(cv_stat)) { cv_stat <- 0 }
+
+  cv <- sqrt(cv_stat /
                (length(x) *
                   min(length(unique(x)),
                       length(unique(y))) - 1))
+
   return(as.numeric(cv))
 }

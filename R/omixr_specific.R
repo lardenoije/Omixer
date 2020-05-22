@@ -8,6 +8,7 @@
 #' @param sample_id Name of sample ID variable
 #' @param block Paired sample identifier
 #' @param plate_layout Pre-specified or custom plate layout
+#' @param plate_number Number of plates
 #' @param rand_vars Randomization variables (default: all except sample ID and block)
 #' @param tech_vars Technical covariates
 #' @param mask Wells to be left empty
@@ -22,7 +23,7 @@
 #' @import magrittr
 #' @export
 
-omixr_specific <- function(df, seed = seed, sample_id = sample_id, block = block, plate_layout = "Illumina96", rand_vars, tech_vars, mask = 0) {
+omixr_specific <- function(df, seed = seed, sample_id = sample_id, block = block, plate_layout = "Illumina96", plate_number = 1, rand_vars, tech_vars, mask = 0) {
 
   # Initialize variables
   perm_var <- NULL
@@ -39,10 +40,10 @@ omixr_specific <- function(df, seed = seed, sample_id = sample_id, block = block
   # Set up predefined plate layout
   if(plate_layout == "Illumina96") {
     plate_layout <- data.frame(
-      well = rep(1:96, 7),
-      plate = rep(1:7, each=96),
-      row = factor(rep(1:8, 84), labels = toupper(letters[1:8])),
-      columns = rep(rep(1:12, each=8), 7))
+      well = rep(1:96, plate_number),
+      plate = rep(1:plate_number, each=96),
+      row = factor(rep(1:8, plate_number*12), labels = toupper(letters[1:8])),
+      columns = rep(rep(1:12, each=8), plate_number))
   }
 
   # Define sample ID, blocks, and permutation variables
@@ -134,9 +135,9 @@ omixr_specific <- function(df, seed = seed, sample_id = sample_id, block = block
           geom_tile(aes(fill = corr_val),
                     size = 3, colour = "white", show.legend = FALSE) +
           geom_text(aes(label = round(corr_val,3)),
-                    colour = ifelse(corr_df$corr_val < mean(corr_df$corr_val), "white", "grey30"), fontface = "bold", nudge_y = 0.2, size = 5) +
+                    colour = ifelse(corr_df$corr_val < mean(corr_df$corr_val), "white", "grey30"), fontface = "bold", nudge_y = 0.2, size = 8) +
           geom_text(aes(label = paste("p =",round(corr_p, 3))),
-                    nudge_y = -0.2, colour = ifelse(corr_df$corr_val < mean(corr_df$corr_val), "white", "grey30")) +
+                    nudge_y = -0.2, size = 6, colour = ifelse(corr_df$corr_val < mean(corr_df$corr_val), "white", "grey30")) +
           scale_fill_distiller(palette = "YlGnBu") +
           scale_x_discrete(position = "top",
                            name = "Randomization variables \n",
@@ -147,11 +148,11 @@ omixr_specific <- function(df, seed = seed, sample_id = sample_id, block = block
                            expand = c(0,0)) +
           ggtitle("Correlations present in the chosen layout") +
           coord_equal() +
-          theme(plot.title = element_text(hjust = 0.5, size = 18),
-                axis.title = element_text(face = "bold", size = 14),
+          theme(plot.title = element_text(hjust = 0.5, size = 24),
+                axis.title = element_text(face = "bold", size = 18),
                 axis.ticks = element_blank(),
-                axis.text.x = element_text(size = 12),
-                axis.text.y = element_text(angle = 90, size = 12, vjust=1)))
+                axis.text.x = element_text(size = 16),
+                axis.text.y = element_text(angle = 90, size = 16, vjust=1)))
 
 
   return(omixr_layout)
