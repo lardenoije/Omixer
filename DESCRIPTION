@@ -1,4 +1,4 @@
-Package: omixR
+Package: Omixer
 Type: Package
 Title: Randomize Samples for -omics Profiling
 Version: 0.1.0
@@ -21,11 +21,12 @@ Imports:
     gridExtra,
     magrittr,
     readr,
-    tidyselect,
-    BiocStyle
+    tidyselect
 Depends: R (>= 4.0.0)
 RoxygenNote: 7.1.0
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    BiocStyle,
+    magick
 VignetteBuilder: knitr
