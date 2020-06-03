@@ -22,17 +22,37 @@
 #' @import dplyr
 #' @import ggplot2
 #' @import magrittr
-#' @importFrom tibble tibble
+#' @import tibble
+#' @import forcats
+#' @import stringr
 #' @importFrom readr write_delim write_csv write_csv2
 #' @importFrom tidyselect everything all_of
 #' @importFrom grid unit
 #' @export
+#' 
+#' @examples 
+#' library(tibble)
+#' library(forcats)
+#' library(stringr)
+#' 
+#' sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+#' sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+#' age=round(rnorm(48, mean=30, sd=8), 0), 
+#' smoke=as_factor(sample(c("yes", "ex", "never"), 48, replace=TRUE)),
+#' date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
+#'                by="day"), 48))
+#'                
+#' randVars <- c("sex", "age", "smoke", "date")
+#' 
+#' omixerLayout <- omixerRand(sampleList, sampleId="sampleId", 
+#' block="block", iterNum=10, wells=48, div="row", 
+#' plateNum=1, randVars=randVars)
 
 omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     wells, div="none", positional=FALSE, plateNum=1, layout, mask=0, techVars,
     randVars) {
 
-  ## Set up plate layout
+    ## Set up plate layout
     if (!missing(layout) & !missing(techVars)) {
         layout <- layout; techVars <- techVars
     } else if (!missing(layout) & missing(techVars)) {
@@ -52,11 +72,11 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     }
     well <- NULL
     plate <- NULL
-    layout <- tibble(plate=rep(1:plateNum, each=wells),
-        well=rep(1:wells, plateNum),
-        row=factor(rep(rep(1:rowNum, each=colNum), plateNum),
-            labels=toupper(letters[1:rowNum])),
-        column=rep(1:colNum, rowNum*plateNum), mask=mask,
+    layout <- tibble(plate=rep(seq_len(plateNum), each=wells),
+        well=rep(seq_len(wells), plateNum),
+        row=factor(rep(rep(seq_len(rowNum), each=colNum), plateNum),
+            labels=toupper(letters[seq_len(rowNum)])),
+        column=rep(seq_len(colNum), rowNum*plateNum), mask=mask,
         chip=case_when(div == "col" ~ column, div == "row" ~ as.integer(row),
             div == "col-block" ~ as.integer(ceiling(column / 2)),
             div == "row-block" ~ as.integer(ceiling(as.numeric(row) / 2))),
@@ -108,19 +128,19 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     }
 
     ## Create the specified number of permutations of block or ID
-    permSet <- lapply(1:iterNum, function(x) {
+    permSet <- lapply(seq_len(iterNum), function(x) {
         set.seed(x*999)
         sample(unique(df$permVar))
     })
 
     ## Create list of randomized sample layouts using permSet
-    dfRandList <- lapply(1:iterNum, function(x) {
+    dfRandList <- lapply(seq_len(iterNum), function(x) {
         set.seed(x*999)
-        dfShuffle <- df %>% group_by(permVar) %>% slice(sample(1:n())) %>%
-            ungroup()
-        dfRandList <- lapply(1:length(permSet[[x]]), function(y){
-          dfRand <- dfShuffle %>% filter(permVar == permSet[[x]][y])
-          return(dfRand)
+        dfShuffle <- df %>% group_by(permVar) %>% 
+            slice(sample(seq_len(n()))) %>% ungroup()
+        dfRandList <- lapply(seq_len(length(permSet[[x]])), function(y){
+            dfRand <- dfShuffle %>% filter(permVar == permSet[[x]][y])
+            return(dfRand)
         })
         dfRand <- bind_rows(dfRandList)
         dfRand <- dfRand %>% mutate(seed=x*999)
@@ -134,7 +154,7 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     }
 
     ## Combine randomized sample lists with plate layout
-    sampleLayoutList <- lapply(1:length(dfRandList), function(x) {
+    sampleLayoutList <- lapply(seq_len(length(dfRandList)), function(x) {
         sampleLayout <- cbind(dfRandList[[x]], layoutMasked)
         return(sampleLayout)
     })
@@ -148,7 +168,7 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     ## Save correlation estimates and p-values
     corVal <- NULL
     corP <- NULL
-    corTbList <- lapply(1:length(sampleLayoutList), function(x){
+    corTbList <- lapply(seq_len(length(sampleLayoutList)), function(x){
         sampleLayout <- sampleLayoutList[[x]]
         corTbList <- lapply(randVars, function(y){
             corTbList <- lapply(techVars, function(z){
@@ -167,7 +187,7 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     ## Create correlation table
     pTest <- NULL
     absSum <- NULL
-    corSumList <- lapply(1:length(corTbList), function(x){
+    corSumList <- lapply(seq_len(length(corTbList)), function(x){
         corTb <- corTbList[[x]]
         corSum <- tibble(seed=x*999, absSum=sum(abs(corTb$corVal)),
             pTest=any(corTb$corP < 0.05))
@@ -202,6 +222,7 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     omixerLayout <- full_join(omixerLayout, layout,
         by=c("well", "plate", "row", "column", "mask", "chip", "chipPos"))
     omixerLayout <- omixerLayout %>% arrange(plate, well)
+    omixerLayout$permVar <- NULL
 
     ## Print information
     print(paste("Layout created using a seed of:", omixerLayout$seed[1]))
@@ -227,6 +248,6 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
         axis.text.x=element_text(size=16),
         axis.text.y=element_text(angle=90, size=16, vjust=1)))
 
-  return(omixerLayout)
+    return(omixerLayout)
 }
 

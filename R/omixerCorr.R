@@ -15,12 +15,28 @@
 #' @param y Technical covariate (e.g. plate number)
 #'
 #' @return List of correlation estimate and p-value
-#'
+#' @import tibble
+#' @import forcats
+#' @import stringr
 #' @importFrom stats chisq.test
 #' @importFrom stats cor.test
 #' @importFrom forcats as_factor
 #' @importFrom tibble tibble
 #' @export
+#' 
+#' @examples 
+#' library(tibble)
+#' library(forcats)
+#' library(stringr)
+#' 
+#' sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+#' sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+#' age=round(rnorm(48, mean=30, sd=8), 0), 
+#' smoke=as_factor(sample(c("yes", "ex", "never"), 48, replace=TRUE)),
+#' date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
+#'     by="day"), 48))
+#'                 
+#' omixerCorr(sampleList$age, sampleList$sex)
 
 omixerCorr <- function(x, y) {
 
@@ -41,12 +57,12 @@ omixerCorr <- function(x, y) {
         corP <- chisq.test(x, y)$p.value
     } else {
         ## Otherwise, use Kendall's correlation coefficient and p-value
-        corVal <- cor.test(x, y, method="kendall")$estimate
-        corP <- cor.test(x, y, method="kendall")$p.value
+        corVal <- cor.test(x, y, method="kendall", exact=FALSE)$estimate
+        corP <- cor.test(x, y, method="kendall", exact=FALSE)$p.value
     }
 
     ## Return as a data frame of estimate and p-value
     corTb <- tibble("corVal"=corVal, "corP"=corP)
 
-  return(corTb)
+    return(corTb)
 }

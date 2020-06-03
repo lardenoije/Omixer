@@ -1,10 +1,10 @@
 ---
-title: "Omixer: Multivariate and reproducible randomization of omics samples 
-    with intuitive visualization of resulting layouts"
+title: "Omixer: Multivariate and reproducible randomization for
+    omics measurements with lab-friendly sample layouts"
 author: 
 - Lucy Sinke
 - Davy Cats
-- Bas Heijmans*
+- Bas Heijmans
 package: Omixer
 bibliography: omixer.bib
 output:   
@@ -78,17 +78,7 @@ variables (all p-values over 0.05).
 correlations is minimized.
 
 The optimal randomized list can then be processed by `omixerSheet`, returning 
-intuitive visualizations of sample layouts for the wet lab.
-
-## Installation ##
-
-The **Omixer** package can be installed using 
-[**devtools**](https://github.com/hadley/devtools) in R.
-
-```{r devtools, eval=FALSE}
-library(devtools)
-install_github("molepi/Omixer")
-```    
+intuitive sample layouts for the wet lab.
 
 # Creating Layouts #
 
@@ -164,23 +154,43 @@ plate layout as a data frame. The only requirement is that the number of
 unmasked wells is equal to the number of samples in your experiment, and that 
 you input the names of technical covariate columns to the `techVars` option. 
 
+For example, if we wanted to create a 96-well plate to send for 450K DNA
+methylation profiling, we might submit the following `layout` and `techVars`.
+
+```{r}
+layout <- tibble(plate=rep(1, 96), well=1:96, 
+    row=factor(rep(1:8, each=12), labels=toupper(letters[1:8])),
+    column=rep(1:12, 8), chip=as.integer(ceiling(column/2)),
+    chipPos=ifelse(column %% 2 == 0, as.numeric(row)+8, row))
+
+techVars <- c("chip", "chipPos")
+
+layout
+```
+
+
 # Simple example #
 
-We create toy data, representing 96 samples to be sent off for RNA sequencing. 
-We have information about the age, sex, and smoking status of the individuals 
-alongside sample isolation dates, and want to optimize distribution of these 
-across lanes on the flowcell to minimize batch effects.
+We create toy data, representing 48 samples to be sent off for RNA sequencing. 
+All samples will be on a single 48-well flowcell, with each of the 8-sample 
+rows being pipetting onto a lane, resulting in 6 lanes. This setup can be 
+represented using provided **Omixer** layouts, as is described below.
+
+First, we build the sample list that will be provided to **Omixer**, with 
+information on the age, sex, and smoking status of individuals alongside 
+sample isolation dates. We want to optimize distribution of these randomization
+variables across lanes on the flowcell to minimize batch effects.
 
 ```{r rna_toy_data}
 set.seed(999)
 
-sampleList <- tibble(sampleId=str_pad(1:96, 3, pad="0"),
-    sex=as_factor(sample(c("male", "female"), 96, replace=TRUE)), 
-    age=round(rnorm(96, mean=30, sd=8), 0), 
-    smoke=as_factor(sample(c("current", "ex", "never"), 96, 
+sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+    sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+    age=round(rnorm(48, mean=30, sd=8), 0), 
+    smoke=as_factor(sample(c("yes", "ex", "never"), 48, 
         replace=TRUE)),
     date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
-        by="day"), 96))
+        by="day"), 48))
 
 sampleList
 ```
@@ -209,8 +219,50 @@ or decrease the number of randomization variables.
 
 ```{r rna_omixer_rand}
 omixerLayout <- omixerRand(sampleList, sampleId="sampleId", 
-    block="block", iterNum=10, wells=96, div="row", 
+    block="block", iterNum=100, wells=48, div="row", 
     plateNum=1, randVars=randVars)
+```
+
+Following `omixerRand`, an optimal randomized sample list is returned. This 
+can be used as is or processed by `omixerSheet` to create lab-friendly sample 
+sheets, which will be shown below.
+
+```{r}
+head(omixerLayout[1:11])
+```
+
+## Regenerating Layouts ##
+
+Since multivariate randomization can take some time with large datasets and 
+many randomization variables, we provide the `omixerSpecific` function to 
+reproduce previously generated layouts. After running `omixerRand`, the seed 
+of the optimal layout is printed, and this can be input into the following 
+function for quick and easy regeneration.
+
+The layout above was generated with a seed of 63936.
+
+```{r omixer_specific_rna, eval=FALSE}
+omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
+    block="block", seed=63936, wells=96, div="row", 
+    plateNum=1, randVars=randVars)
+```
+
+## Sample Sheets ##
+
+Once the multivariate randomization is complete, the resulting data frame can 
+be input into `omixerSheet` to produce lab-friendly sample layouts. These will 
+be saved in your working directory as a PDF document. 
+
+It is possible to colour code these sheets by a specific factor using the 
+`group` option, and this is demonstrated in the extended example.
+
+```{r omixer_sheet_rna}
+omixerSheet(omixerLayout)
+```
+
+```{r example_sheet_rna, fig.wide = TRUE, out.width = '100%', echo=FALSE}
+knitr::include_graphics(file.path(here(), "vignettes", 
+    "omixer_sample_sheets_rna.png"))
 ```
 
 # Extended example #
@@ -219,19 +271,21 @@ To demonstrate the full functionality of **Omixer**, we present an extended
 example.
 
 Here, our toy data represents 616 samples ready to be sent off for EPIC DNA 
-methylation profiling. These samples will be used to investigate how DNA 
-methylation changes over time in 4 tissues from 77 individuals. 
+methylation profiling. These samples will be randomized to 7 96-well plates 
+where each of the 8 columns are transferred to a 12-sample EPIC chip. The 
+last chip on each plate needs to be kept empty for control samples, and we 
+will communicate this to **Omixer** using the `mask` option.
 
-Given our primary research question, we would like to keep the two timepoints 
-adjacent on the array but randomize their order. Additionally, we want to 
-reserve the final chip (8 wells) on each plate for control samples. This 
-amounts to sending 7 96-well plates for profiling.
+Our samples are taken from 4 different tissues of 77 individuals, and we are 
+interested in how DNA methylation changes over 2 timepoints. Given our 
+primary research question, we would like to keep the timepoints adjacent on 
+the array but randomize their order. We can do this in **Omixer** with the 
+`block` option, as demonstrated below.
 
 ## Creating Toy Data ##
 
 As well as a sample ID, we need to tell **Omixer** which variables specify 
-paired sample blocks. Randomization variables in our example are tissue, sex, 
-age, body mass index (BMI), and isolation date. 
+paired sample blocks using a blocking variable, which we name `block`.
 
 ```{r dna_toy_data}
 set.seed(999)
@@ -254,7 +308,8 @@ sampleList
 ## Setting up Variables ##
 
 We set up our randomization variables to optimize distribution of our 
-biological factors across chips and plates. 
+biological factors across chips and plates. Randomization variables in our 
+example are tissue, sex, age, body mass index (BMI), and isolation date. 
 
 ```{r dna_var_setup}
 randVars <- c("tissue", "sex", "age", "bmi", "date")
@@ -318,13 +373,9 @@ considerably lower than many seen in the simple randomized layout.
 
 ## Regenerating layouts ##
 
-Since multivariate randomization can take some time with large datasets and 
-many randomization variables, we provide the `omixerSpecific` function to 
-reproduce previously generated layouts. After running `omixerRand`, the seed 
-of the optimal layout is printed, and this can be input into the following 
-function for quick and easy regeneration.
-
-The layout above was generated with a seed of 43956.
+As in the simple example, any **Omixer** layouts can be regenerated using the 
+`seed` in the `omixerSpecific` function. The layout above was generated with a 
+seed of 43956, so we could regenerate it using the following code.
 
 ```{r omixer_specific, eval=FALSE}
 omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
@@ -332,19 +383,20 @@ omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId",
     randVars=randVars, mask=mask)
 ```
 
-# Intuitive Sample Sheets #
+## Sample Sheets ##
 
 The bridge between dry and wet labs can be precarious. Technicians are often 
 faced with long, monotonous lists of samples, which they need to pipette 
-accurately to minimize sample mixups. The `omixerSheet` function smooths this 
-transition by creating PDFs of sample layouts that are intuitive for manual 
-pipetting. 
+accurately to minimize sample mixups. This is especially prevalent in more 
+complicated setups as in this extended example.
+
+The `omixerSheet` function smooths this transition by creating lab-friendly 
+PDFs of sample layouts.
 
 You can colour code wells by another variable. In our example, we want to 
 highlight wells of each tissue, since samples from one tissue are likely to be 
-stored together. 
-
-An example of the resulting sample sheet for the first plate is shown below.
+stored together `group="tissue"`. The first page of the resulting PDF is shown
+below.
 
 ```{r omixer_sheet}
 omixerSheet(omixerLayout, group="tissue")
@@ -354,7 +406,7 @@ omixerSheet(omixerLayout, group="tissue")
 
 ```{r example_sheet, fig.wide = TRUE, out.width = '100%', echo=FALSE}
 knitr::include_graphics(file.path(here(), "vignettes", 
-    "omixer_sample_sheets.png"))
+    "omixer_sample_sheets_dna.png"))
 ```
 
 # References #

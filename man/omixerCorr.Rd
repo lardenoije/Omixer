@@ -27,3 +27,17 @@ are stored.
 Please note: variables will be converted to numeric class
 within this function.
 }
+\examples{
+library(tibble)
+library(forcats)
+library(stringr)
+
+sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+age=round(rnorm(48, mean=30, sd=8), 0), 
+smoke=as_factor(sample(c("yes", "ex", "never"), 48, replace=TRUE)),
+date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
+    by="day"), 48))
+                
+omixerCorr(sampleList$age, sampleList$sex)
+}

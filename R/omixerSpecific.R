@@ -21,11 +21,31 @@
 #' @import dplyr
 #' @import ggplot2
 #' @import magrittr
-#' @importFrom tibble tibble
+#' @import tibble
+#' @import forcats
+#' @import stringr
 #' @importFrom readr write_delim write_csv write_csv2
 #' @importFrom tidyselect everything all_of
 #' @importFrom grid unit
 #' @export
+#'
+#' @examples 
+#' library(tibble)
+#' library(forcats)
+#' library(stringr)
+#' 
+#' sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+#' sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+#' age=round(rnorm(48, mean=30, sd=8), 0), 
+#' smoke=as_factor(sample(c("yes", "ex", "never"), 48, replace=TRUE)),
+#' date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
+#'                by="day"), 48))
+#'                
+#' randVars <- c("sex", "age", "smoke", "date")
+#' 
+#' omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
+#' block="block", seed=6993, wells=48, div="row", 
+#' plateNum=1, randVars=randVars)
 
 omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
     wells, div="none", positional=FALSE, plateNum=1, layout, mask=0, techVars,
@@ -51,11 +71,11 @@ omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
     }
     plate <- NULL
     well <- NULL
-    layout <- tibble(plate=rep(1:plateNum, each=wells),
-        well=rep(1:wells, plateNum),
-        row=factor(rep(rep(1:rowNum, each=colNum), plateNum),
-            labels=toupper(letters[1:rowNum])),
-        column=rep(1:colNum, rowNum*plateNum), mask=mask,
+    layout <- tibble(plate=rep(seq_len(plateNum), each=wells),
+        well=rep(seq_len(wells), plateNum),
+        row=factor(rep(rep(seq_len(rowNum), each=colNum), plateNum),
+            labels=toupper(letters[seq_len(rowNum)])),
+        column=rep(seq_len(colNum), rowNum*plateNum), mask=mask,
         chip=case_when(div == "col" ~ column, div == "row" ~ as.integer(row),
             div == "col-block" ~ as.integer(ceiling(column / 2)),
             div == "row-block" ~ as.integer(ceiling(as.numeric(row) / 2))),
@@ -105,6 +125,7 @@ omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
     } else {
         stop("Sample ID not found in provided sample list.")
     }
+    df$seed <- seed
 
     ## Use seed to generate permSet of the specified layout
     set.seed(seed)
@@ -112,12 +133,12 @@ omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
 
     ## Create randomized sample layout using permSet
     set.seed(seed)
-    dfShuffle <- df %>% group_by(permVar) %>% slice(sample(1:n())) %>%
+    dfShuffle <- df %>% group_by(permVar) %>% slice(sample(seq_len(n()))) %>%
         ungroup()
 
-    dfRandList <- lapply(1:length(permSet), function(x){
-      dfRand <- dfShuffle %>% filter(permVar == permSet[[x]])
-      return(dfRand)
+    dfRandList <- lapply(seq_len(length(permSet)), function(x){
+        dfRand <- dfShuffle %>% filter(permVar == permSet[[x]])
+        return(dfRand)
     })
     dfRand <- bind_rows(dfRandList)
 
@@ -150,9 +171,10 @@ omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
                 corP=cor$corP)
             return(corTb)
         })
-        corTb <-bind_rows(corTbList)
+        corTb <- bind_rows(corTbList)
         return(corTb)
     })
+    corTb <- bind_rows(corTbList)
 
     ## Create correlation table
     corSum <- tibble(seed=seed, absSum=sum(abs(corTb$corVal)),
@@ -162,6 +184,7 @@ omixerSpecific <- function(df, seed=seed, sampleId="sampleId", block="block",
     omixerLayout <- full_join(omixerLayout, layout,
         by=c("well", "plate", "row", "column", "mask", "chip", "chipPos"))
     omixerLayout <- omixerLayout %>% arrange(plate, well)
+    omixerLayout$permVar <- NULL
 
     ## Print information
     print(paste("This sample layout was regenerated using a seed of", seed))

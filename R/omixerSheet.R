@@ -10,13 +10,37 @@
 #' @return PDF of sample layout in working directory
 #'
 #' @import ggplot2
+#' @import magrittr
+#' @import here
+#' @import tibble
+#' @import forcats
+#' @import stringr
 #' @importFrom dplyr select filter
 #' @importFrom gridExtra marrangeGrob
 #' @importFrom tidyselect everything all_of
-#' @import magrittr
 #' @export
+#' 
+#' @examples
+#' library(tibble)
+#' library(forcats)
+#' library(stringr)
+#' 
+#' sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
+#' sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
+#' age=round(rnorm(48, mean=30, sd=8), 0), 
+#' smoke=as_factor(sample(c("yes", "ex", "never"), 48, replace=TRUE)),
+#' date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'), 
+#'                by="day"), 48))
+#'                
+#' randVars <- c("sex", "age", "smoke", "date")
+#' 
+#' omixerLayout <- omixerRand(sampleList, sampleId="sampleId", 
+#' block="block", iterNum=10, wells=48, div="row", 
+#' plateNum=1, randVars=randVars)
+#' 
+#' omixerSheet(omixerLayout)
 
-omixerSheet <- function(omixerLayout=omixerLayout, group=NULL) {
+omixerSheet <- function(omixerLayout=omixerLayout, group) {
 
     ## Set labels
     sampleId <- NULL
@@ -25,11 +49,16 @@ omixerSheet <- function(omixerLayout=omixerLayout, group=NULL) {
     top <- NULL
     plate <- NULL
 
-    omixerLayout <- omixerLayout %>% select(top = sampleId,
-        bottom = ifelse(is.null(group), NA, all_of(group)), everything())
+    omixerLayout <- omixerLayout %>% mutate(top=sampleId)
+    if(!missing(group)) {
+        omixerLayout <- omixerLayout %>% 
+            select(bottom=all_of(group), everything())
+    } else {
+        omixerLayout$bottom <- NA
+    }
 
     ## Create list of plate layouts
-    ggPlateList <- lapply(1:max(omixerLayout$plate), function(x) {
+    ggPlateList <- lapply(seq_len(max(omixerLayout$plate)), function(x) {
         ggPlate <- omixerLayout %>% filter(plate == x) %>%
         ggplot(aes(x=column, y=row)) +
         geom_tile(aes(x=column, y=row, fill=bottom), colour="grey20", size=1.5,
@@ -49,7 +78,7 @@ omixerSheet <- function(omixerLayout=omixerLayout, group=NULL) {
         theme(plot.title=element_text(size=22, face="bold", hjust=0.5,
             colour="grey30"), axis.text=element_text(size=18, face="bold"),
             axis.ticks=element_blank(), panel.grid=element_blank(),
-            panel.background=element_rect("grey50"),
+            panel.background=element_rect("grey80"),
             panel.border=element_rect("grey20", fill=NA, size=3))
         return(ggPlate)
     })
