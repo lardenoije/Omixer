@@ -1,7 +1,7 @@
 Package: Omixer
 Type: Package
 Title: Randomize Samples for -omics Profiling
-Version: 0.99.1
+Version: 0.99.2
 Author: Lucy Sinke
 Maintainer: Lucy Sinke <l.j.sinke@lumc.nl>
 Description: Optimizes distribution of randomization variables to 

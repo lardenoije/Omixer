@@ -1,7 +1,7 @@
 # omixr #
 ### Multivariate and reproducible randomization of omics samples with intuitive visualization of resulting layouts ###
 ***
-![alt text](http://www.molepi.nl/images/logo.png)
+![](http://www.molepi.nl/images/logo.png)
 
 Batch effects can have a major impact on the results of omics studies [(Leek et al, 2010)](https://www.nature.com/articles/nrg2825). Randomization is the first, and arguably most influential, step in handling them. However, its implementation suffers from a few key issues:
 

@@ -109,25 +109,22 @@ By default, `div` is set to "none", but it can be set to "col", "row",
 So, for `wells=48, div="col"`, each column of a 48-well plate will be 
 treated as a batch (different colours in the image below).
 
-```{r example_plate_col, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(path=
-    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48col.png")
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./omixer_48col.png')
 ```
 
 If you instead specify `div="row"`, the rows will be treated as batches. 
 
-```{r example_plate_row, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(path=
-    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48row.png")
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./omixer_48row.png')
 ```
 
 Similarly, you can set `div="col-block"` or `div="row-block"` for 
 batches that are 2 columns or rows wide, respectively. The image below shows 
 how a 48 well plate would be subdivided with the `div="col-block"` option.
 
-```{r example_plate_block, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(path=
-    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48colblock.png")
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./omixer_48colblock.png')
 ```
 
 Combining the above will allow you to create a large number of layouts 
@@ -257,9 +254,9 @@ It is possible to colour code these sheets by a specific factor using the
 omixerSheet(omixerLayout)
 ```
 
-```{r example_sheet_rna, fig.wide = TRUE, out.width = '100%', echo=FALSE}
-knitr::include_graphics(path=
-    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_sample_sheets_rna.PNG")
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./omixer_sample_sheets_rna.PNG')
 ```
 
 # Extended example #
@@ -401,9 +398,8 @@ omixerSheet(omixerLayout, group="tissue")
 
 <br>
 
-```{r example_sheet, fig.wide = TRUE, out.width = '100%', echo=FALSE}
-knitr::include_graphics(path=
-    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_sample_sheets_dna.PNG")
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./omixer_sample_sheets_dna.PNG')
 ```
 
 # References #
