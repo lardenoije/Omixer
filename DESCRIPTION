@@ -1,7 +1,7 @@
 Package: Omixer
 Type: Package
 Title: Randomize Samples for -omics Profiling
-Version: 0.99.0
+Version: 0.99.1
 Author: Lucy Sinke
 Maintainer: Lucy Sinke <l.j.sinke@lumc.nl>
 Description: Optimizes distribution of randomization variables to 
@@ -16,7 +16,6 @@ Imports:
     ggplot2,
     forcats,
     tibble,
-    here,
     gridExtra,
     magrittr,
     readr,

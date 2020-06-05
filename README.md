@@ -21,13 +21,4 @@ After performing robust tests of correlation between technical covariates and se
 * No test provided sufficient evidence to suggest correlation between the variables (all p-values over 0.05).
 * From the remaining layouts, return one where the absolute sum of correlations is minimized.
 
-The optimal randomized list can then be processed by `omixerSheet`, returning intuitive visualizations of sample layouts for the wet lab.
-
-## Installation ##
-
-The **Omixer** package can be installed using [**devtools**](https://github.com/hadley/devtools) in R.
-
-```{r devtools, eval=FALSE}
-library(devtools)
-install_github("molepi/Omixer")
-```    
+The optimal randomized list can then be processed by `omixerSheet`, returning intuitive sample layouts for the wet lab.

@@ -16,10 +16,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(root.dir=normalizePath(".."))
-```
-
 ```{r, include=FALSE}
 knitr::opts_chunk$set(collapse=TRUE, comment="#>")
 ```
@@ -56,7 +52,6 @@ library(tibble)
 library(forcats)
 library(stringr)
 library(dplyr)
-library(here)
 library(ggplot2)
 library(magick)
 ```
@@ -115,13 +110,15 @@ So, for `wells=48, div="col"`, each column of a 48-well plate will be
 treated as a batch (different colours in the image below).
 
 ```{r example_plate_col, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(file.path(here(), "vignettes", "omixer_48col.png"))
+knitr::include_graphics(path=
+    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48col.png")
 ```
 
 If you instead specify `div="row"`, the rows will be treated as batches. 
 
 ```{r example_plate_row, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(file.path(here(), "vignettes", "omixer_48row.png"))
+knitr::include_graphics(path=
+    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48row.png")
 ```
 
 Similarly, you can set `div="col-block"` or `div="row-block"` for 
@@ -129,8 +126,8 @@ batches that are 2 columns or rows wide, respectively. The image below shows
 how a 48 well plate would be subdivided with the `div="col-block"` option.
 
 ```{r example_plate_block, fig.wide=TRUE, out.width='100%', echo=FALSE}
-knitr::include_graphics(file.path(here(), "vignettes", 
-    "omixer_48colblock.png"))
+knitr::include_graphics(path=
+    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_48colblock.png")
 ```
 
 Combining the above will allow you to create a large number of layouts 
@@ -261,8 +258,8 @@ omixerSheet(omixerLayout)
 ```
 
 ```{r example_sheet_rna, fig.wide = TRUE, out.width = '100%', echo=FALSE}
-knitr::include_graphics(file.path(here(), "vignettes", 
-    "omixer_sample_sheets_rna.png"))
+knitr::include_graphics(path=
+    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_sample_sheets_rna.PNG")
 ```
 
 # Extended example #
@@ -405,8 +402,8 @@ omixerSheet(omixerLayout, group="tissue")
 <br>
 
 ```{r example_sheet, fig.wide = TRUE, out.width = '100%', echo=FALSE}
-knitr::include_graphics(file.path(here(), "vignettes", 
-    "omixer_sample_sheets_dna.png"))
+knitr::include_graphics(path=
+    "https://github.com/molepi/Omixer/blob/master/vignettes/omixer_sample_sheets_dna.PNG")
 ```
 
 # References #
