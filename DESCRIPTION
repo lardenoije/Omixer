@@ -4,8 +4,10 @@ Title: Randomize Samples for -omics Profiling
 Version: 0.99.3
 Authors@R: person("Lucy", "Sinke", 
     email="l.j.sinke@lumc.nl", role=c("cre", "aut"))
-Description: Tools to optimally randomize -omics samples
-    and print lab-friendly sample sheets.
+Description: Omixer - an R package for multivariate and reproducible 
+    randomization with lab-friendly sample layouts. Omixer ensures optimal 
+    sample distribution across batches with well-documented methods, and 
+    can output intuitive sample sheets for the wet lab if needed. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
