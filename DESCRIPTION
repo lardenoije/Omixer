@@ -1,7 +1,7 @@
 Package: Omixer
 Type: Package
 Title: Randomize Samples for -omics Profiling
-Version: 0.99.3
+Version: 0.99.5
 Authors@R: person("Lucy", "Sinke", 
     email="l.j.sinke@lumc.nl", role=c("cre", "aut"))
 Description: Omixer - an R package for multivariate and reproducible 
