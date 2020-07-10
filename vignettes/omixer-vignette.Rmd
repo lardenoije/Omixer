@@ -16,8 +16,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse=TRUE, comment="#>")
+set.seed(123)
 ```
 
 # Introduction #
@@ -176,8 +177,6 @@ sample isolation dates. We want to optimize distribution of these randomization
 variables across lanes on the flowcell to minimize batch effects.
 
 ```{r rna_toy_data}
-set.seed(999)
-
 sampleList <- tibble(sampleId=str_pad(1:48, 4, pad="0"),
     sex=as_factor(sample(c("m", "f"), 48, replace=TRUE)), 
     age=round(rnorm(48, mean=30, sd=8), 0), 
@@ -230,14 +229,17 @@ head(omixerLayout[1:11])
 Since multivariate randomization can take some time with large datasets and 
 many randomization variables, we provide the `omixerSpecific` function to 
 reproduce previously generated layouts. After running `omixerRand`, the seed 
-of the optimal layout is printed, and this can be input into the following 
-function for quick and easy regeneration.
+of the optimal layout is saved to the working directory.
 
-The layout above was generated with a seed of 63936.
+After setting the global variable `.Random.seed`, you can run `omixerSpecific`
+to regenerate the optimal layout.
 
 ```{r omixer_specific_rna, eval=FALSE}
+load("randomSeed.Rdata")
+.GlobalEnv$.Random.seed <- randomSeed
+
 omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
-    block="block", seed=63936, wells=96, div="row", 
+    block="block", wells=96, div="row", 
     plateNum=1, randVars=randVars)
 ```
 
@@ -282,8 +284,6 @@ As well as a sample ID, we need to tell **Omixer** which variables specify
 paired sample blocks using a blocking variable, which we name `block`.
 
 ```{r dna_toy_data}
-set.seed(999)
-
 sampleList<- tibble(sampleId=str_pad(1:616, 4, pad="0"), 
     block=rep(1:308, each=2), 
     time=rep(0:1, 308), 
@@ -297,6 +297,7 @@ sampleList<- tibble(sampleId=str_pad(1:616, 4, pad="0"),
         by="day"), 77), each=8))
 
 sampleList
+save(sampleList, file="sampleList.Rdata")
 ```
 
 ## Setting up Variables ##
@@ -348,14 +349,9 @@ simpleLayout <- omixerRand(sampleList, sampleId="sampleId",
 
 Here, we see strong evidence of a correlation between:
 
-* Age and chip (τ = -0.064, p = 0.026)
-* Isolation date and plate (τ = -0.073, p = 0.012)
-* Tissue and plate (τ = 0.072, p = 0.026)
-
-There is also borderline evidence for a correlation between:
-
-* BMI and chip (τ = 0.049, p = 0.083)
-* BMI and plate (τ = 0.052, p = 0.075)
+* Age and chip (τ = -0.082, p = 0.005)
+* Age and plate (τ = -0.073, p = 0.011)
+* Date and plate (τ = 0.082, p = 0.005)
 
 These patterns threaten the validity of our future inferences, as the effects 
 of biological factors are entangled with technical variations. 
@@ -368,12 +364,17 @@ considerably lower than many seen in the simple randomized layout.
 ## Regenerating layouts ##
 
 As in the simple example, any **Omixer** layouts can be regenerated using the 
-`seed` in the `omixerSpecific` function. The layout above was generated with a 
-seed of 43956, so we could regenerate it using the following code.
+saved random environment in the `omixerSpecific` function. 
 
-```{r omixer_specific, eval=FALSE}
+After setting the global variable `.Random.seed`, you can run `omixerSpecific`
+to regenerate the optimal layout.
+
+```{r omixer_specific_dna, eval=FALSE}
+load("randomSeed.Rdata")
+.GlobalEnv$.Random.seed <- randomSeed
+
 omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
-    block="block", seed=43956, wells=96, div="col", plateNum=7, 
+    block="block", wells=96, div="col", plateNum=7, 
     randVars=randVars, mask=mask)
 ```
 

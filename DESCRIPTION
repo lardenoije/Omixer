@@ -1,13 +1,11 @@
 Package: Omixer
 Type: Package
 Title: Randomize Samples for -omics Profiling
-Version: 0.99.2
-Author: Lucy Sinke
-Maintainer: Lucy Sinke <l.j.sinke@lumc.nl>
-Description: Optimizes distribution of randomization variables to 
-    minimize correlations with technical covariates.
-    Also allows the production of PDF sample sheets for easy
-    manual pipetting of samples in the lab.
+Version: 0.99.3
+Authors@R: person("Lucy", "Sinke", 
+    email="l.j.sinke@lumc.nl", role=c("cre", "aut"))
+Description: Tools to optimally randomize -omics samples
+    and print lab-friendly sample sheets.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -32,5 +30,6 @@ Suggests:
     magick,
     testthat
 VignetteBuilder: knitr
-biocViews: DataRepresentation, ExperimentalDesign, QualityControl, Software, Visualization
+biocViews: DataRepresentation, ExperimentalDesign, QualityControl, 
+    Software, Visualization
 BugReports: https://github.com/molepi/Omixer/issues

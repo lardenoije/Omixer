@@ -13,15 +13,8 @@ randVars <- c("sex", "age", "smoke", "date")
 compareDataRand <- omixerRand(testingData, iterNum=10, wells=48, div="row", 
     randVars=randVars)
 
-compareDataSpec <- omixerSpecific(testingData, seed=compareDataRand$seed[1], wells=48, div="row", 
-    randVars=randVars)
-
 test_that("All observations are kept after randomization.", {
   expect_true(all(table(compareDataRand$smoke) == table(testingData$smoke)))
-})
-
-test_that("omixerSpecific and omixerRand match with matching seeds.", {
-  expect_true(all(compareDataSpec == compareDataRand))
 })
 
 

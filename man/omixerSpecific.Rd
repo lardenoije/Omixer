@@ -6,7 +6,6 @@
 \usage{
 omixerSpecific(
   df,
-  seed = seed,
   sampleId = "sampleId",
   block = "block",
   wells,
@@ -21,8 +20,6 @@ omixerSpecific(
 }
 \arguments{
 \item{df}{Sample list}
-
-\item{seed}{Seed}
 
 \item{sampleId}{String specifying sample ID variable}
 
@@ -49,7 +46,7 @@ Chosen layout as a data frame
 }
 \description{
 Regenerate an Omixer-produced randomized sample list quickly,
-by providing the seed returned from omixerRand().
+after setting up the random environement from omixerRand
 }
 \examples{
 library(tibble)
@@ -66,6 +63,6 @@ date=sample(seq(as.Date('2008/01/01'), as.Date('2016/01/01'),
 randVars <- c("sex", "age", "smoke", "date")
 
 omixerLayout <- omixerSpecific(sampleList, sampleId="sampleId", 
-block="block", seed=6993, wells=48, div="row", 
+block="block", wells=48, div="row", 
 plateNum=1, randVars=randVars)
 }

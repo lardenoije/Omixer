@@ -18,6 +18,7 @@
 #' @param randVars Randomization variables
 #'
 #' @return Selected randomized sample list as a data frame
+#' @return Randomization environment of optimal list generation
 #'
 #' @import dplyr
 #' @import ggplot2
@@ -126,36 +127,40 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     } else {
         stop("Sample ID not found in provided sample list.")
     }
-
-    ## Create the specified number of permutations of block or ID
-    permSet <- lapply(seq_len(iterNum), function(x) {
-        set.seed(x*999)
-        sample(unique(df$permVar))
-    })
-
-    ## Create list of randomized sample layouts using permSet
-    dfRandList <- lapply(seq_len(iterNum), function(x) {
-        set.seed(x*999)
-        dfShuffle <- df %>% group_by(permVar) %>% 
-            slice(sample(seq_len(n()))) %>% ungroup()
-        dfRandList <- lapply(seq_len(length(permSet[[x]])), function(y){
-            dfRand <- dfShuffle %>% filter(permVar == permSet[[x]][y])
-            return(dfRand)
-        })
-        dfRand <- bind_rows(dfRandList)
-        dfRand <- dfRand %>% mutate(seed=x*999)
+    
+    ## Create randomized layouts and save in a list with the seeds
+    dfRandList <- lapply(seq_len(iterNum), function(x){
+      ## Save seed
+      if(exists(".Random.seed", .GlobalEnv)) {
+        seed <- .GlobalEnv$.Random.seed
+      } else {
+        seed <- NULL
+      }
+      # Create a permutation set based on the .Random.seed saved above
+      permSet <- sample(unique(df$permVar))
+      # Shuffle groups
+      dfShuffle <- df %>% group_by(permVar) %>% 
+        slice(sample(seq_len(n()))) %>% ungroup()
+      # Create the randomized data frame
+      dfRand <- lapply(seq_len(length(permSet)), function(y){
+        dfRand <- dfShuffle %>% filter(permVar == permSet[y])
         return(dfRand)
+      })
+      dfRand <- list(bind_rows(dfRand), seed)
+      return(dfRand)
     })
 
     ## Filter masked wells from plate layout
     layoutMasked <- layout %>% filter(mask == 0)
-    if(nrow(layoutMasked) != nrow(dfRandList[[1]])) {
+    if(nrow(layoutMasked) != nrow(dfRandList[[1]][[1]])) {
         stop("Number of unmasked wells must equal number of samples.")
     }
 
     ## Combine randomized sample lists with plate layout
     sampleLayoutList <- lapply(seq_len(length(dfRandList)), function(x) {
-        sampleLayout <- cbind(dfRandList[[x]], layoutMasked)
+        sampleLayout <- cbind(dfRandList[[x]][[1]], layoutMasked)
+        sampleLayout$layoutNum <- x
+        sampleLayout <- list(sampleLayout, dfRandList[[x]][[2]])
         return(sampleLayout)
     })
 
@@ -169,12 +174,12 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     corVal <- NULL
     corP <- NULL
     corTbList <- lapply(seq_len(length(sampleLayoutList)), function(x){
-        sampleLayout <- sampleLayoutList[[x]]
+        sampleLayout <- sampleLayoutList[[x]][[1]]
         corTbList <- lapply(randVars, function(y){
             corTbList <- lapply(techVars, function(z){
                 cor <- omixerCorr(sampleLayout[, y], sampleLayout[, z])
-                corTb <- tibble(randVars=y, techVars=z, corVal=cor$corVal,
-                    corP=cor$corP)
+                corTb <- tibble(layoutNum=x, randVars=y, techVars=z, 
+                    corVal=cor$corVal, corP=cor$corP)
                 return(corTb)
             })
             corTb <-bind_rows(corTbList)
@@ -189,33 +194,35 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     absSum <- NULL
     corSumList <- lapply(seq_len(length(corTbList)), function(x){
         corTb <- corTbList[[x]]
-        corSum <- tibble(seed=x*999, absSum=sum(abs(corTb$corVal)),
-            pTest=any(corTb$corP < 0.05))
+        corSum <- tibble(layoutNum=corTb$layoutNum, 
+            absSum=sum(abs(corTb$corVal)), pTest=any(corTb$corP < 0.05))
     })
     corSum <- bind_rows(corSumList)
 
     #Find the optimal layout
-    chosenSeed <- (corSum %>% filter(pTest == FALSE) %>%
-        filter(absSum == min(absSum)))$seed
+    chosenLayout <- (corSum %>% filter(pTest == FALSE) %>%
+        filter(absSum == min(absSum)))$layoutNum[1]
 
     ## Check number of optimized layouts
-    if(length(chosenSeed)==0) {
+    if(is.na(chosenLayout)) {
         warning("All randomized layouts contained unwanted correlations.")
         warning("Returning best possible layout.")
-        nonoptSeed <- (corSum %>% filter(absSum == min(absSum)))$seed
+        nonoptLayout <- (corSum %>% filter(absSum == min(absSum)))$layoutNum[1]
     }
-    if(length(chosenSeed) > 1) {
-        chosenSeed <- chosenSeed[1]
+    if(length(chosenLayout) > 1) {
+        chosenLayout <- chosenLayout[1]
         message("Several layouts were equally optmized.")
     }
 
     ## Save correlations for chosen layout
-    if(length(chosenSeed)>0){
-        corSelect <- corTbList[[chosenSeed/999]]
-        omixerLayout <- sampleLayoutList[[chosenSeed/999]]
+    if(!is.na(chosenLayout)){
+        corSelect <- corTbList[[chosenLayout]]
+        omixerLayout <- sampleLayoutList[[chosenLayout]][[1]]
+        randomSeed <- sampleLayoutList[[chosenLayout]][[2]]
     } else {
-        corSelect <- corTbList[[nonoptSeed/999]]
-        omixerLayout <- sampleLayoutList[[nonoptSeed/999]]
+        corSelect <- corTbList[[nonoptLayout]]
+        omixerLayout <- sampleLayoutList[[nonoptLayout]][[1]]
+        randomSeed <- sampleLayoutList[[nonoptLayout]][[2]]
     }
 
     ## Rejoin layout with masked wells
@@ -223,9 +230,11 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
         by=c("well", "plate", "row", "column", "mask", "chip", "chipPos"))
     omixerLayout <- omixerLayout %>% arrange(plate, well)
     omixerLayout$permVar <- NULL
+    omixerLayout$layoutNum <- NULL
 
     ## Print information
-    print(paste("Layout created using a seed of:", omixerLayout$seed[1]))
+    message("Random seed saved to working directory")
+    save(randomSeed, file="randomSeed.Rdata")
 
     ## Visualize correlations
     print(ggplot(corSelect, aes(x=randVars, y=techVars)) +

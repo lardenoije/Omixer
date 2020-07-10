@@ -46,6 +46,8 @@ omixerRand(
 }
 \value{
 Selected randomized sample list as a data frame
+
+Randomization environment of optimal list generation
 }
 \description{
 As the main function of the Omixer package, this function
