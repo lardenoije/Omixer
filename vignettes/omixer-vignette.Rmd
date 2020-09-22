@@ -1,6 +1,6 @@
 ---
-title: "Omixer: Multivariate and reproducible randomization for
-    omics measurements with lab-friendly sample layouts"
+title: "Omixer: multivariate and reproducible randomization 
+    to proactively counter batch effects in omics studies"
 author: 
 - Lucy Sinke
 - Davy Cats
