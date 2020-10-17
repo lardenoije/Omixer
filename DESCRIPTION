@@ -1,6 +1,6 @@
 Package: Omixer
 Type: Package
-Title: Omixer: multivariate and reproducible randomization to proactively 
+Title: Omixer: multivariate and reproducible sample randomization to proactively 
     counter batch effects in omics studies
 Version: 0.99.7
 Authors@R: person("Lucy", "Sinke", 
