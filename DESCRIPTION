@@ -2,14 +2,14 @@ Package: Omixer
 Type: Package
 Title: Omixer: multivariate and reproducible sample randomization to proactively 
     counter batch effects in omics studies
-Version: 0.99.7
+Version: 1.00.00
 Authors@R: person("Lucy", "Sinke", 
     email="l.j.sinke@lumc.nl", role=c("cre", "aut"))
 Description: Omixer - an Bioconductor package for multivariate and 
-    reproducible randomization, which ensures optimal sample distribution 
-    across batches with well-documented methods. It outputs lab-friendly 
-    sample layouts, reducing the risk of sample mixups when manually pipetting 
-    randomized samples. 
+    reproducible sample randomization, which ensures optimal sample 
+    distribution across batches with well-documented methods. It outputs 
+    lab-friendly sample layouts, reducing the risk of sample mixups when 
+    manually pipetting randomized samples. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

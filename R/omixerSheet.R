@@ -56,11 +56,13 @@ omixerSheet <- function(omixerLayout=omixerLayout, group) {
         omixerLayout$bottom <- NA
     }
 
+    
+    
     ## Create list of plate layouts
     ggPlateList <- lapply(seq_len(max(omixerLayout$plate)), function(x) {
         ggPlate <- omixerLayout %>% filter(plate == x) %>%
         ggplot(aes(x=column, y=row)) +
-        geom_tile(aes(x=column, y=row, fill=bottom), colour="grey20", size=1.5,
+        geom_tile(aes(x=column, y=row, fill=factor(bottom)), colour="grey20", size=1.5,
             show.legend=FALSE) + coord_equal() +
         geom_text(aes(label=ifelse(is.na(bottom), "", as.character(bottom))),
             colour="grey30", size=3.5, nudge_y=0.2) +
@@ -68,10 +70,12 @@ omixerSheet <- function(omixerLayout=omixerLayout, group) {
             colour="grey30", fontface="bold", size=4, nudge_y=-0.1) +
         scale_fill_brewer(palette="Set3") +
         scale_x_discrete(name="",
-            limits=c(min(omixerLayout$column):max(omixerLayout$column)),
+            limits=factor(c(min(as.numeric(omixerLayout$column)):
+                         max(as.numeric(omixerLayout$column)))),
             position="top", expand=c(0,0)) +
-        scale_y_discrete(name="", limits=toupper(letters[max(as.numeric(
-            omixerLayout$row)):min(as.numeric(omixerLayout$row))]),
+        scale_y_discrete(name="", limits=(toupper(letters[
+            c(max(as.numeric(omixerLayout$row)):
+                min(as.numeric(omixerLayout$row)))])),
             expand=c(0,0)) +
         ggtitle(paste("Sample Overview for Plate", x)) +
         theme(plot.title=element_text(size=22, face="bold", hjust=0.5,
