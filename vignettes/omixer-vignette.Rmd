@@ -317,7 +317,7 @@ In the mask, a `0` indicates that a sample will be assigned to that well, and
 a `1` indicates that it should be left empty.
 
 ```{r dna_mask}
-mask <- rep(c(rep(0, 11), 1), 56)
+mask <- rep(c(rep(0, 88), rep(1, 8)), 7)
 ```
 
 ## Running **Omixer** ##
