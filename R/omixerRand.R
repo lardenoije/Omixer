@@ -199,13 +199,17 @@ omixerRand <- function(df, sampleId="sampleId", block="block", iterNum=1000,
     })
     corSum <- bind_rows(corSumList)
 
-    #Find the optimal layout
-    chosenLayout <- (corSum %>% filter(pTest == FALSE) %>%
-        filter(absSum == min(absSum)))$layoutNum[1]
-
+    ## Find the optimal layout
+    if (all(corSum$pTest)) {
+        warning("All randomized layouts contained unwanted correlations.")
+        chosenLayout <- NA
+    } else {
+    chosenLayout <- (corSum %>% filter(pTest == FALSE) %>% filter(absSum == 
+                                                                    min(absSum)))$layoutNum[1]
+    }
+    
     ## Check number of optimized layouts
     if(is.na(chosenLayout)) {
-        warning("All randomized layouts contained unwanted correlations.")
         warning("Returning best possible layout.")
         nonoptLayout <- (corSum %>% filter(absSum == min(absSum)))$layoutNum[1]
     }
