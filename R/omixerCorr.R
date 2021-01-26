@@ -41,15 +41,15 @@
 omixerCorr <- function(x, y) {
 
     ## Convert variables to numeric
-    if(class(x) %in% c("character")) x <- as.numeric(as_factor(x))
-    if(class(y) %in% c("character")) y <- as.numeric(as_factor(y))
-    if(class(x) %in% c("Date", "factor")) x <- as.numeric(x)
-    if(class(y) %in% c("Date", "factor")) y <- as.numeric(y)
+    if(any(class(x) %in% c("character"))) x <- as.numeric(as_factor(x))
+    if(any(class(y) %in% c("character"))) y <- as.numeric(as_factor(y))
+    if(any(class(x) %in% c("Date", "factor", "ordered"))) x <- as.numeric(x)
+    if(any(class(y) %in% c("Date", "factor", "ordered"))) y <- as.numeric(y)
 
     ## Save correlation estimates and p values
     if(length(unique(x)) < 5 & length(unique(y)) < 5) {
         ## Two categorical variables
-        cvStat <- chisq.test(x, y, correct=FALSE)$statistics
+        cvStat <- chisq.test(x, y, correct=FALSE)$statistic
         if(is.null(cvStat)) cvStat <- 0
         cv <- sqrt(cvStat/(length(x)*min(length(unique(x)),
             length(unique(y)))-1))
