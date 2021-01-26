@@ -39,7 +39,7 @@
 #' 
 #' omixerSheet(omixerLayout)
 
-omixerSheet <- function(omixerLayout=omixerLayout, group) {
+omixerSheet <- function(omixerLayout=omixerLayout, group, group.text.size = 3.5, sample.text.size = 4) {
 
     ## Set labels
     sampleId <- NULL
@@ -65,9 +65,9 @@ omixerSheet <- function(omixerLayout=omixerLayout, group) {
         geom_tile(aes(x=column, y=row, fill=factor(bottom)), colour="grey20", size=1.5,
             show.legend=FALSE) + coord_equal() +
         geom_text(aes(label=ifelse(is.na(bottom), "", as.character(bottom))),
-            colour="grey30", size=3.5, nudge_y=0.2) +
+            colour="grey30", size=group.text.size, nudge_y=0.2) +
         geom_text(aes(label=ifelse(is.na(top), "", as.character(top))),
-            colour="grey30", fontface="bold", size=4, nudge_y=-0.1) +
+            colour="grey30", fontface="bold", size=sample.text.size, nudge_y=-0.1) +
         scale_fill_brewer(palette="Set3") +
         scale_x_discrete(name="",
             limits=factor(c(min(as.numeric(omixerLayout$column)):
